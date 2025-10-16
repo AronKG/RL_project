@@ -687,7 +687,7 @@ def main():
     # Create and train Monte Carlo agent with main parameters
     mc_agent = MonteCarloBlackjackAgent(
         num_episodes=1000000,
-        gamma=0.95,
+        gamma=1.0,
         epsilon=0.1,
         alpha=0.05,
         first_visit=True
@@ -749,9 +749,9 @@ def parse_args():
     Parse command line arguments
     """
     parser = argparse.ArgumentParser(description='Enhanced Monte Carlo RL Blackjack Training')
-    parser.add_argument('--episodes', type=int, default=500000, help='Number of training episodes')
+    parser.add_argument('--episodes', type=int, default=1000000, help='Number of training episodes')
     parser.add_argument('--alpha', type=float, default=0.05, help='Learning rate')
-    parser.add_argument('--gamma', type=float, default=0.95, help='Discount factor')
+    parser.add_argument('--gamma', type=float, default=1.0, help='Discount factor')
     parser.add_argument('--epsilon', type=float, default=0.1, help='Epsilon for epsilon-greedy')
     parser.add_argument('--first-visit', action='store_true', default=True, help='Use first-visit MC')
     parser.add_argument('--eval-games', type=int, default=50000, help='Number of evaluation games')
