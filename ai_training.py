@@ -382,76 +382,127 @@ class MonteCarloBlackjackAgent:
     
     def create_state_value_heatmaps(self):
         """
-        Create heatmaps for state values V(s) for usable_ace=True and False
+        Create state value heatmaps matching Sutton & Barto Figure 5.2 style
         """
-        # Initialize matrices for hard and soft totals
-        hard_matrix = np.zeros((10, 10))  # player_sum 12-21, dealer 1-10
-        soft_matrix = np.zeros((10, 10))  # player_sum 12-21, dealer 1-10
+        if not self.V:
+            print(" No state values available. Train the agent first.")
+            return
         
-        # Fill matrices with state values
-        for player_sum in range(12, 22):
-            for dealer_showing in range(1, 11):
+        # Prepare data for plotting (Sutton & Barto style)
+        player_sums = list(range(12, 22))  # 12-21
+        dealer_showings = list(range(1, 11))  # 1-10 (A=1, T/J/Q/K=10)
+        
+        hard_grid = np.zeros((len(player_sums), len(dealer_showings)))
+        soft_grid = np.zeros((len(player_sums), len(dealer_showings)))
+        
+        # Fill grids with V(s) values
+        for i, player_sum in enumerate(player_sums):
+            for j, dealer_showing in enumerate(dealer_showings):
                 # Hard totals (no usable ace)
                 hard_state = (player_sum, dealer_showing, False)
-                hard_key = self.get_state_key(hard_state)
-                if hard_key in self.V:
-                    hard_matrix[player_sum-12, dealer_showing-1] = self.V[hard_key]
+                if hard_state in self.V:
+                    hard_grid[i, j] = self.V[hard_state]
                 else:
-                    hard_matrix[player_sum-12, dealer_showing-1] = np.nan
+                    hard_grid[i, j] = 0.0  # Default to 0 for unseen states
                 
                 # Soft totals (usable ace)
                 soft_state = (player_sum, dealer_showing, True)
-                soft_key = self.get_state_key(soft_state)
-                if soft_key in self.V:
-                    soft_matrix[player_sum-12, dealer_showing-1] = self.V[soft_key]
+                if soft_state in self.V:
+                    soft_grid[i, j] = self.V[soft_state]
                 else:
-                    soft_matrix[player_sum-12, dealer_showing-1] = np.nan
+                    soft_grid[i, j] = 0.0  # Default to 0 for unseen states
         
-        # Create comparison heatmaps
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        # Normalize to [-1, +1] range as in Sutton & Barto
+        all_values = np.concatenate([hard_grid.flatten(), soft_grid.flatten()])
+        if len(all_values) > 0:
+            vmin, vmax = np.min(all_values), np.max(all_values)
+            # Normalize to [-1, +1]
+            if vmax > vmin:
+                hard_grid_norm = 2 * (hard_grid - vmin) / (vmax - vmin) - 1
+                soft_grid_norm = 2 * (soft_grid - vmin) / (vmax - vmin) - 1
+            else:
+                hard_grid_norm = hard_grid
+                soft_grid_norm = soft_grid
+        else:
+            hard_grid_norm = hard_grid
+            soft_grid_norm = soft_grid
         
-        # Find common scale for both heatmaps
-        hard_values = hard_matrix[~np.isnan(hard_matrix)]
-        soft_values = soft_matrix[~np.isnan(soft_matrix)]
-        all_values = np.concatenate([hard_values, soft_values])
-        vmin, vmax = np.min(all_values), np.max(all_values)
+        # Create 2D heatmaps (Sutton & Barto style)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
         
         # Hard totals heatmap
-        sns.heatmap(hard_matrix, 
-                   xticklabels=range(1, 11), 
-                   yticklabels=range(12, 22),
-                   cmap='RdYlBu_r',
-                   cbar_kws={'label': 'State Value V(s)'},
-                   ax=ax1,
-                   mask=np.isnan(hard_matrix),
-                   vmin=vmin, vmax=vmax)
-        ax1.set_title('Hard Totals (No Usable Ace)', fontsize=14, fontweight='bold')
-        ax1.set_xlabel('Dealer Showing Card')
-        ax1.set_ylabel('Player Sum')
+        im1 = ax1.imshow(hard_grid_norm, cmap='RdYlBu_r', aspect='auto', origin='lower', vmin=-1, vmax=1)
+        ax1.set_title('No Usable Ace', fontsize=14, fontweight='bold')
+        ax1.set_xlabel('Dealer showing', fontsize=12)
+        ax1.set_ylabel('Player sum', fontsize=12)
+        ax1.set_xticks(range(len(dealer_showings)))
+        ax1.set_xticklabels(dealer_showings)
+        ax1.set_yticks(range(len(player_sums)))
+        ax1.set_yticklabels(player_sums)
+        
+        # Add colorbar for hard totals
+        cbar1 = plt.colorbar(im1, ax=ax1, shrink=0.8)
+        cbar1.set_label('V(s)', fontsize=10)
         
         # Soft totals heatmap
-        sns.heatmap(soft_matrix, 
-                   xticklabels=range(1, 11), 
-                   yticklabels=range(12, 22),
-                   cmap='RdYlBu_r',
-                   cbar_kws={'label': 'State Value V(s)'},
-                   ax=ax2,
-                   mask=np.isnan(soft_matrix),
-                   vmin=vmin, vmax=vmax)
-        ax2.set_title('Soft Totals (Usable Ace)', fontsize=14, fontweight='bold')
-        ax2.set_xlabel('Dealer Showing Card')
-        ax2.set_ylabel('Player Sum')
+        im2 = ax2.imshow(soft_grid_norm, cmap='RdYlBu_r', aspect='auto', origin='lower', vmin=-1, vmax=1)
+        ax2.set_title('Usable Ace', fontsize=14, fontweight='bold')
+        ax2.set_xlabel('Dealer showing', fontsize=12)
+        ax2.set_ylabel('Player sum', fontsize=12)
+        ax2.set_xticks(range(len(dealer_showings)))
+        ax2.set_xticklabels(dealer_showings)
+        ax2.set_yticks(range(len(player_sums)))
+        ax2.set_yticklabels(player_sums)
         
-        plt.suptitle('Blackjack State Values: Hard vs Soft Totals Comparison', 
+        # Add colorbar for soft totals
+        cbar2 = plt.colorbar(im2, ax=ax2, shrink=0.8)
+        cbar2.set_label('V(s)', fontsize=10)
+        
+        plt.suptitle('Blackjack State-Value Function V(s) = max_a Q(s,a)', 
                     fontsize=16, fontweight='bold', y=1.02)
         plt.tight_layout()
         
-        # Save comparison file
-        plt.savefig('visualizations/V_hard_vs_soft_comparison.png', dpi=300, bbox_inches='tight')
+        # Save 2D heatmap
+        plt.savefig('visualizations/V_soft_vs_hard_heatmap.png', dpi=300, bbox_inches='tight')
         plt.show()
         
-        print(" State value heatmap saved:")
-        print("   - visualizations/V_hard_vs_soft_comparison.png (side-by-side comparison)")
+        # Create 3D surface plots (Sutton & Barto Figure 5.2 style)
+        from mpl_toolkits.mplot3d import Axes3D
+        
+        # Create meshgrids for 3D plotting
+        X, Y = np.meshgrid(dealer_showings, player_sums)
+        
+        # 3D plot for Hard totals
+        fig = plt.figure(figsize=(20, 8))
+        
+        ax1 = fig.add_subplot(121, projection='3d')
+        surf1 = ax1.plot_surface(X, Y, hard_grid_norm, cmap='RdYlBu_r', alpha=0.8, vmin=-1, vmax=1)
+        ax1.set_title('No Usable Ace (3D)', fontsize=14, fontweight='bold')
+        ax1.set_xlabel('Dealer showing', fontsize=12)
+        ax1.set_ylabel('Player sum', fontsize=12)
+        ax1.set_zlabel('V(s)', fontsize=12)
+        ax1.view_init(elev=30, azim=45)
+        
+        # 3D plot for Soft totals
+        ax2 = fig.add_subplot(122, projection='3d')
+        surf2 = ax2.plot_surface(X, Y, soft_grid_norm, cmap='RdYlBu_r', alpha=0.8, vmin=-1, vmax=1)
+        ax2.set_title('Usable Ace (3D)', fontsize=14, fontweight='bold')
+        ax2.set_xlabel('Dealer showing', fontsize=12)
+        ax2.set_ylabel('Player sum', fontsize=12)
+        ax2.set_zlabel('V(s)', fontsize=12)
+        ax2.view_init(elev=30, azim=45)
+        
+        plt.suptitle('Blackjack State-Value Function V(s) - 3D Surface Plots', 
+                    fontsize=16, fontweight='bold', y=0.95)
+        plt.tight_layout()
+        
+        # Save 3D plots
+        plt.savefig('visualizations/V_soft_vs_hard_3d.png', dpi=300, bbox_inches='tight')
+        plt.show()
+        
+        print(" State value visualizations saved:")
+        print("   - visualizations/V_soft_vs_hard_heatmap.png (2D heatmaps)")
+        print("   - visualizations/V_soft_vs_hard_3d.png (3D surfaces side-by-side)")
     
     
     def create_training_plots(self):
@@ -728,7 +779,8 @@ def main():
     print("    models/")
     print("      - monte_carlo_strategy.pkl (trained model)")
     print("    visualizations/")
-    print("      - V_hard_vs_soft_comparison.png (hard vs soft comparison)")
+    print("      - V_soft_vs_hard_heatmap.png (2D heatmaps)")
+    print("      - V_soft_vs_hard_3d.png (3D surfaces)")
     print("      - training_reward_curve.png (reward & win rate progression)")
     print("    results/")
     print("      - training_history.csv (training data)")
