@@ -81,12 +81,12 @@ class MonteCarloBlackjackAgent:
     
     def __init__(self, num_episodes=500000, gamma=0.95, epsilon=0.1, alpha=0.05, first_visit=True):
         self.num_episodes = num_episodes
-        self.gamma = gamma  # Discount factor
-        self.epsilon = epsilon  # Fixed epsilon (no decay)
-        self.alpha = alpha  # Learning rate
-        self.first_visit = first_visit  # First-visit vs Every-visit MC
+        self.gamma = gamma  
+        self.epsilon = epsilon 
+        self.alpha = alpha  
+        self.first_visit = first_visit  
         
-        # Data structures
+        
         self.Q = {}  # Q-value function Q(s,a)
         self.V = {}  # State value function V(s) = max_a Q(s,a)
         self.N = {}  # Visit counts N(s,a)
@@ -103,7 +103,7 @@ class MonteCarloBlackjackAgent:
             'checkpoint_episodes': []
         }
         
-        # Hyperparameters for saving
+        
         self.hyperparams = {
             'num_episodes': num_episodes,
             'gamma': gamma,
@@ -167,7 +167,7 @@ class MonteCarloBlackjackAgent:
             # Play one episode
             while not env.is_over():
                 if env.get_player_id() == 0:  # Player's turn
-                    # Get current state
+                    
                     raw_obs = state['raw_obs']
                     player_sum, dealer_showing, usable_ace = decode_rlcard_state(raw_obs)
                     current_state = (player_sum, dealer_showing, usable_ace)
@@ -175,17 +175,17 @@ class MonteCarloBlackjackAgent:
                     # Choose action using epsilon-greedy policy
                     action = self.epsilon_greedy_policy(current_state)
                     
-                    # Store state and action
+                  
                     episode_states.append(current_state)
                     episode_actions.append(action)
-                    episode_rewards_list.append(0)  # No immediate reward
+                    episode_rewards_list.append(0) 
                     
-                    # Take action
+                    
                     state, _ = env.step(action)
-                else:  # Dealer's turn
-                    state, _ = env.step(0)  # Dealer always hits
+                else:  
+                    state, _ = env.step(0)  
             
-            # Get final reward
+           
             final_reward = env.get_payoffs()[0]
             if episode_rewards_list:
                 episode_rewards_list[-1] = final_reward
@@ -193,10 +193,10 @@ class MonteCarloBlackjackAgent:
             # Update Q-values using Monte Carlo method
             self.update_q_values(episode_states, episode_actions, episode_rewards_list)
             
-            # Track episode reward
+            
             episode_rewards.append(final_reward)
             
-            # Update training stats
+            
             self.training_stats['episodes_played'] += 1
             if final_reward > 0:
                 self.training_stats['wins'] += 1
@@ -205,19 +205,19 @@ class MonteCarloBlackjackAgent:
             else:
                 self.training_stats['ties'] += 1
             
-            # Checkpoint every checkpoint_interval episodes
+            
             if (episode + 1) % checkpoint_interval == 0:
                 # Compute state values
                 self.compute_state_values()
                 
-                # Calculate rolling win rate
+                
                 recent_episodes = episode_rewards[-checkpoint_interval:]
                 wins = sum(1 for r in recent_episodes if r > 0)
                 rolling_winrate = (wins / len(recent_episodes)) * 100
                 rolling_winrates.append(rolling_winrate)
                 checkpoint_episodes.append(episode + 1)
                 
-                # Update progress bar
+                
                 pbar.set_postfix({
                     'Win Rate (Train)': f'{rolling_winrate:.1f}%',
                     'States': len(self.Q),
@@ -226,15 +226,15 @@ class MonteCarloBlackjackAgent:
         
         pbar.close()
         
-        # Store final tracking data
+       
         self.training_stats['episode_rewards'] = episode_rewards
         self.training_stats['rolling_winrate'] = rolling_winrates
         self.training_stats['checkpoint_episodes'] = checkpoint_episodes
         
-        # Final state values computation
+       
         self.compute_state_values()
         
-        # Extract optimal policy
+       
         self.extract_policy()
         
         if verbose:
@@ -247,9 +247,9 @@ class MonteCarloBlackjackAgent:
     
     def update_q_values(self, states, actions, rewards):
         """
-        Update Q-values using Monte Carlo method (First-visit or Every-visit)
+        Update Q-values using Monte Carlo method 
         """
-        # Calculate returns (discounted cumulative rewards)
+       
         returns = []
         G = 0
         for reward in reversed(rewards):
@@ -266,26 +266,26 @@ class MonteCarloBlackjackAgent:
                 if pair not in seen_pairs:
                     seen_pairs.add(pair)
                     
-                    # Initialize if not seen before
+                    
                     if state_key not in self.Q:
                         self.Q[state_key] = {0: 0.0, 1: 0.0}
                         self.N[state_key] = {0: 0, 1: 0}
                     
-                    # Update visit count
+               
                     self.N[state_key][action] += 1
                     
-                    # Update Q-value using learning rate α
+                  
                     current_q = self.Q[state_key][action]
                     return_value = returns[i]
                     
                     # Q(s,a) = Q(s,a) + α * [G - Q(s,a)]
                     self.Q[state_key][action] = current_q + self.alpha * (return_value - current_q)
         else:
-            # Every-visit MC: update each (state, action) on every occurrence
+            
             for i, (state, action) in enumerate(zip(states, actions)):
                 state_key = self.get_state_key(state)
                 
-                # Initialize if not seen before
+               
                 if state_key not in self.Q:
                     self.Q[state_key] = {0: 0.0, 1: 0.0}
                     self.N[state_key] = {0: 0, 1: 0}
@@ -388,31 +388,31 @@ class MonteCarloBlackjackAgent:
             print(" No state values available. Train the agent first.")
             return
         
-        # Prepare data for plotting (Sutton & Barto style)
+       
         player_sums = list(range(12, 22))  # 12-21
         dealer_showings = list(range(1, 11))  # 1-10 (A=1, T/J/Q/K=10)
         
         hard_grid = np.zeros((len(player_sums), len(dealer_showings)))
         soft_grid = np.zeros((len(player_sums), len(dealer_showings)))
         
-        # Fill grids with V(s) values
+      
         for i, player_sum in enumerate(player_sums):
             for j, dealer_showing in enumerate(dealer_showings):
-                # Hard totals (no usable ace)
+               
                 hard_state = (player_sum, dealer_showing, False)
                 if hard_state in self.V:
                     hard_grid[i, j] = self.V[hard_state]
                 else:
-                    hard_grid[i, j] = 0.0  # Default to 0 for unseen states
+                    hard_grid[i, j] = 0.0  
                 
                 # Soft totals (usable ace)
                 soft_state = (player_sum, dealer_showing, True)
                 if soft_state in self.V:
                     soft_grid[i, j] = self.V[soft_state]
                 else:
-                    soft_grid[i, j] = 0.0  # Default to 0 for unseen states
+                    soft_grid[i, j] = 0.0  
         
-        # Normalize to [-1, +1] range as in Sutton & Barto
+       
         all_values = np.concatenate([hard_grid.flatten(), soft_grid.flatten()])
         if len(all_values) > 0:
             vmin, vmax = np.min(all_values), np.max(all_values)
@@ -427,10 +427,10 @@ class MonteCarloBlackjackAgent:
             hard_grid_norm = hard_grid
             soft_grid_norm = soft_grid
         
-        # Create 2D heatmaps (Sutton & Barto style)
+       
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
         
-        # Hard totals heatmap
+       
         im1 = ax1.imshow(hard_grid_norm, cmap='RdYlBu_r', aspect='auto', origin='lower', vmin=-1, vmax=1)
         ax1.set_title('No Usable Ace', fontsize=14, fontweight='bold')
         ax1.set_xlabel('Dealer showing', fontsize=12)
@@ -440,11 +440,11 @@ class MonteCarloBlackjackAgent:
         ax1.set_yticks(range(len(player_sums)))
         ax1.set_yticklabels(player_sums)
         
-        # Add colorbar for hard totals
+        
         cbar1 = plt.colorbar(im1, ax=ax1, shrink=0.8)
         cbar1.set_label('V(s)', fontsize=10)
         
-        # Soft totals heatmap
+     
         im2 = ax2.imshow(soft_grid_norm, cmap='RdYlBu_r', aspect='auto', origin='lower', vmin=-1, vmax=1)
         ax2.set_title('Usable Ace', fontsize=14, fontweight='bold')
         ax2.set_xlabel('Dealer showing', fontsize=12)
@@ -454,7 +454,7 @@ class MonteCarloBlackjackAgent:
         ax2.set_yticks(range(len(player_sums)))
         ax2.set_yticklabels(player_sums)
         
-        # Add colorbar for soft totals
+      
         cbar2 = plt.colorbar(im2, ax=ax2, shrink=0.8)
         cbar2.set_label('V(s)', fontsize=10)
         
@@ -466,13 +466,13 @@ class MonteCarloBlackjackAgent:
         plt.savefig('visualizations/V_soft_vs_hard_heatmap.png', dpi=300, bbox_inches='tight')
         plt.show()
         
-        # Create 3D surface plots (Sutton & Barto Figure 5.2 style)
+        
         from mpl_toolkits.mplot3d import Axes3D
         
-        # Create meshgrids for 3D plotting
+       
         X, Y = np.meshgrid(dealer_showings, player_sums)
         
-        # 3D plot for Hard totals
+        
         fig = plt.figure(figsize=(20, 8))
         
         ax1 = fig.add_subplot(121, projection='3d')
@@ -483,7 +483,7 @@ class MonteCarloBlackjackAgent:
         ax1.set_zlabel('V(s)', fontsize=12)
         ax1.view_init(elev=30, azim=45)
         
-        # 3D plot for Soft totals
+       
         ax2 = fig.add_subplot(122, projection='3d')
         surf2 = ax2.plot_surface(X, Y, soft_grid_norm, cmap='RdYlBu_r', alpha=0.8, vmin=-1, vmax=1)
         ax2.set_title('Usable Ace (3D)', fontsize=14, fontweight='bold')
@@ -496,7 +496,7 @@ class MonteCarloBlackjackAgent:
                     fontsize=16, fontweight='bold', y=0.95)
         plt.tight_layout()
         
-        # Save 3D plots
+      
         plt.savefig('visualizations/V_soft_vs_hard_3d.png', dpi=300, bbox_inches='tight')
         plt.show()
         
@@ -513,7 +513,7 @@ class MonteCarloBlackjackAgent:
             print("  No checkpoint data available for plotting")
             return
         
-        # Calculate average rewards per checkpoint
+       
         checkpoint_rewards = []
         for episode in self.training_stats['checkpoint_episodes']:
             start_idx = max(0, episode - 10000)
@@ -522,7 +522,7 @@ class MonteCarloBlackjackAgent:
             avg_reward = np.mean(recent_rewards)
             checkpoint_rewards.append(avg_reward)
         
-        # Create plots
+       
         _, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
         
         # Average reward plot
@@ -552,8 +552,7 @@ class MonteCarloBlackjackAgent:
         if not self.training_stats['checkpoint_episodes']:
             print("  No checkpoint data available for CSV export")
             return
-        
-        # Calculate average rewards per checkpoint
+       
         checkpoint_rewards = []
         for episode in self.training_stats['checkpoint_episodes']:
             start_idx = max(0, episode - 10000)
@@ -562,7 +561,7 @@ class MonteCarloBlackjackAgent:
             avg_reward = np.mean(recent_rewards)
             checkpoint_rewards.append(avg_reward)
         
-        # Create DataFrame
+       
         df = pd.DataFrame({
             'episode': self.training_stats['checkpoint_episodes'],
             'avg_reward': checkpoint_rewards,
@@ -593,7 +592,7 @@ class TrainingEnvironment:
             print(f"Testing agent with {num_games} games...")
         
         for _ in range(num_games):
-            # Simulate a complete game
+            
             result = self.simulate_single_game(agent)
             
             if result == 1:
@@ -623,33 +622,33 @@ class TrainingEnvironment:
         """
         Simulate a single blackjack game using RLCard
         """
-        # Reset environment
+       
         state, _ = self.env.reset()
         
         while not self.env.is_over():
-            # Get current state in proper format
+            
             raw_obs = state['raw_obs']
             
             # Decode RLCard state to (player_sum, dealer_showing, usable_ace)
             player_sum, dealer_showing, usable_ace = decode_rlcard_state(raw_obs)
             
-            # Get agent decision
+            
             action = agent.get_action(player_sum, dealer_showing, usable_ace)
             
-            # Take action
+            
             state, _ = self.env.step(action)
         
-        # Get final result
+        
         payoffs = self.env.get_payoffs()
-        final_reward = payoffs[0]  # Player's reward
+        final_reward = payoffs[0]  
         
         # Convert reward to win/loss/tie
         if final_reward > 0:
-            return 1  # Win
+            return 1 
         elif final_reward < 0:
-            return 0  # Loss
+            return 0  
         else:
-            return 0.5  # Tie
+            return 0.5  
 
 def hyperparameter_sweep():
     """
@@ -658,7 +657,7 @@ def hyperparameter_sweep():
     print(" Starting Hyperparameter Sweep...")
     print("=" * 60)
     
-    # Grid search parameters
+    
     alphas = [0.01, 0.05, 0.1]
     gammas = [0.9, 0.95, 0.99]
     num_episodes = 100000
@@ -680,20 +679,20 @@ def hyperparameter_sweep():
                 first_visit=True
             )
             
-            # Train with progress bar
+            
             agent.train(verbose=False)
             
-            # Evaluate with greedy policy (epsilon=0)
+           
             original_epsilon = agent.epsilon
-            agent.epsilon = 0.0  # Greedy evaluation
+            agent.epsilon = 0.0  
             
             env = TrainingEnvironment()
             eval_results = env.test_agent(agent, num_games=eval_games)
             
-            # Restore original epsilon
+            
             agent.epsilon = original_epsilon
             
-            # Store results
+            
             result = {
                 'alpha': alpha,
                 'gamma': gamma,
@@ -708,14 +707,14 @@ def hyperparameter_sweep():
             print(f"   Win Rate (Test): {eval_results['win_rate']:.1f}%")
             print(f"   States Learned: {len(agent.Q)}")
     
-    # Create results DataFrame
+    
     df_results = pd.DataFrame(results)
     df_results = df_results.sort_values('win_rate', ascending=False)
     
-    # Save results
+   
     df_results.to_csv('results/grid_search_results.csv', index=False)
     
-    # Print results table
+  
     print("\n HYPERPARAMETER SWEEP RESULTS")
     print("=" * 60)
     print(df_results.to_string(index=False, float_format='%.2f'))
@@ -731,11 +730,11 @@ def main():
     print(" Enhanced Monte Carlo RL Blackjack Training")
     print("=" * 60)
     
-    # Set random seeds for reproducibility
+   
     random.seed(42)
     np.random.seed(42)
     
-    # Create and train Monte Carlo agent with main parameters
+  
     mc_agent = MonteCarloBlackjackAgent(
         num_episodes=1000000,
         gamma=1.0,
@@ -744,22 +743,22 @@ def main():
         first_visit=True
     )
     
-    # Train the agent
+    
     print(" Starting main training run...")
     mc_agent.train(verbose=True, checkpoint_interval=10000)
     
-    # Create plots and visualizations
+    
     print("\nCreating visualizations...")
     mc_agent.create_state_value_heatmaps()
     mc_agent.create_training_plots()
     mc_agent.save_training_history()
     
-    # Test the agent
+    
     print("\n Testing trained agent...")
     env = TrainingEnvironment()
     mc_results = env.test_agent(mc_agent, num_games=50000)
     
-    # Print results
+   
     print("\n FINAL RESULTS")
     print("=" * 50)
     print("Monte Carlo Agent:")
@@ -771,7 +770,7 @@ def main():
     print(f"   Parameters: α={mc_agent.alpha}, γ={mc_agent.gamma}, ε={mc_agent.epsilon}")
     print(f"   First-visit MC: {mc_agent.first_visit}")
     
-    # Save the trained strategy
+   
     mc_agent.save_strategy()
     
     print("\n Enhanced training completed!")
@@ -786,7 +785,7 @@ def main():
     print("      - training_history.csv (training data)")
     print("      - grid_search_results.csv (hyperparameter results)")
     
-    # Ask if user wants to run hyperparameter sweep
+   
     print("\nRun hyperparameter sweep? (y/n): ", end="")
     try:
         response = input().lower().strip()
