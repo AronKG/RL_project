@@ -730,17 +730,20 @@ def main():
     print(" Enhanced Monte Carlo RL Blackjack Training")
     print("=" * 60)
     
+    # Parse command line arguments
+    args = parse_args()
+    
    
     random.seed(42)
     np.random.seed(42)
     
   
     mc_agent = MonteCarloBlackjackAgent(
-        num_episodes=1000000,
-        gamma=1.0,
-        epsilon=0.1,
-        alpha=0.05,
-        first_visit=True
+        num_episodes=args.episodes,
+        gamma=args.gamma,
+        epsilon=args.epsilon,
+        alpha=args.alpha,
+        first_visit=args.first_visit
     )
     
     
@@ -801,7 +804,7 @@ def parse_args():
     """
     parser = argparse.ArgumentParser(description='Enhanced Monte Carlo RL Blackjack Training')
     parser.add_argument('--episodes', type=int, default=1000000, help='Number of training episodes')
-    parser.add_argument('--alpha', type=float, default=0.05, help='Learning rate')
+    parser.add_argument('--alpha', type=float, default=0.01, help='Learning rate')
     parser.add_argument('--gamma', type=float, default=1.0, help='Discount factor')
     parser.add_argument('--epsilon', type=float, default=0.1, help='Epsilon for epsilon-greedy')
     parser.add_argument('--first-visit', action='store_true', default=True, help='Use first-visit MC')
