@@ -187,6 +187,7 @@ def main():
 
     # Try to load saved models/strategies so opponents use trained policies if available
     # Both load functions look for default paths in models/ directory
+    print('Loading trained agents (if available)...')
     try:
         q_loaded = q_agent.load_model()
         if q_loaded:
