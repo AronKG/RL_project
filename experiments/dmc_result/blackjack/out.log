@@ -1,3 +1,0 @@
-Saving logs data to experiments/dmc_result/blackjack/logs.csv
-Saving logs' fields to experiments/dmc_result/blackjack/fields.csv
-Updated log fields: ['_tick', '_time', 'frames', 'mean_episode_return_0', 'loss_0']
