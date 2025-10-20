@@ -1,4 +1,4 @@
-.PHONY: all train play analysis mc interface clean
+.PHONY: all train play analysis mc
 
 PYTHON ?= python3
 
@@ -23,6 +23,3 @@ mc:
 	@echo "Running mc.py..."
 	$(PYTHON) mc.py
 	@echo "Monte Carlo agent training complete."
-
-clean:
-	@echo "No build artifacts to remove."
